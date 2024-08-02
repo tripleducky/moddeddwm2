@@ -99,14 +99,15 @@ static char *colors[][ColCount] = {
 
 static const Launcher launchers[] = {
 	/* icon to display      command        */
-	{ "󰈹",               CMD("firefox") },
-	{ "",               CMD("st") },
+	{ "󰈹",               CMD("firefox-bin") },
+	{ "",               CMD("alacritty") },
 	{ "",               CMD("krusader") },
 	{ "󰦨  | ",               CMD("kate") },
 };
 
 static const char *const autostart[] = {
-	"nm-applet", NULL,
+	"wpa_gui","-t", NULL,
+	"gentoo-pipewire-launcher", "restart",  NULL,
 	"slstatus", NULL, 
 	NULL /* terminate */
 };
@@ -231,7 +232,7 @@ static const char *dmenucmd[] = {
 	"-sf", selfgcolor,
 	NULL
 };
-static const char *termcmd[]  = { "st", NULL };
+static const char *termcmd[]  = { "alacritty", NULL };
 
 static const Key keys[] = {
 	/* modifier                     key            function                argument */
