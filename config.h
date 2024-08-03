@@ -40,35 +40,35 @@ static const char dmenufont[]            = "monospace:size=12";
 
 static char c000000[]                    = "#000000"; // placeholder value
 
-static char normfgcolor[]                = "#bbbbbb";
-static char normbgcolor[]                = "#222222";
-static char normbordercolor[]            = "#444444";
+static char normfgcolor[]                = "#211717";
+static char normbgcolor[]                = "#c7c5c5";
+static char normbordercolor[]            = "#585151";
 static char normfloatcolor[]             = "#db8fd9";
 
 static char selfgcolor[]                 = "#eeeeee";
 static char selbgcolor[]                 = "#005577";
-static char selbordercolor[]             = "#005577";
+static char selbordercolor[]             = "#aa4538";
 static char selfloatcolor[]              = "#005577";
 
-static char titlenormfgcolor[]           = "#bbbbbb";
-static char titlenormbgcolor[]           = "#222222";
-static char titlenormbordercolor[]       = "#444444";
+static char titlenormfgcolor[]           = "#211717";
+static char titlenormbgcolor[]           = "#c7c5c5";
+static char titlenormbordercolor[]       = "#9f9aa6";
 static char titlenormfloatcolor[]        = "#db8fd9";
 
-static char titleselfgcolor[]            = "#eeeeee";
-static char titleselbgcolor[]            = "#005577";
-static char titleselbordercolor[]        = "#005577";
-static char titleselfloatcolor[]         = "#005577";
+static char titleselfgcolor[]            = "#aa4538";
+static char titleselbgcolor[]            = "#7da1c7";
+static char titleselbordercolor[]        = "#7e8eaa";
+static char titleselfloatcolor[]         = "#7da1c7";
 
-static char tagsnormfgcolor[]            = "#bbbbbb";
-static char tagsnormbgcolor[]            = "#222222";
-static char tagsnormbordercolor[]        = "#444444";
+static char tagsnormfgcolor[]            = "#211717";
+static char tagsnormbgcolor[]            = "#c7c5c5";
+static char tagsnormbordercolor[]        = "#9f9aa6";
 static char tagsnormfloatcolor[]         = "#db8fd9";
 
-static char tagsselfgcolor[]             = "#eeeeee";
-static char tagsselbgcolor[]             = "#005577";
-static char tagsselbordercolor[]         = "#005577";
-static char tagsselfloatcolor[]          = "#005577";
+static char tagsselfgcolor[]             = "#aa4538";
+static char tagsselbgcolor[]             = "#7da1c7";
+static char tagsselbordercolor[]         = "#7e8eaa";
+static char tagsselfloatcolor[]          = "#7da1c7";
 
 static char hidnormfgcolor[]             = "#005577";
 static char hidselfgcolor[]              = "#227799";
@@ -78,7 +78,7 @@ static char hidselbgcolor[]              = "#222222";
 static char urgfgcolor[]                 = "#bbbbbb";
 static char urgbgcolor[]                 = "#222222";
 static char urgbordercolor[]             = "#ff0000";
-static char urgfloatcolor[]              = "#db8fd9";
+static char urgfloatcolor[]              = "#db8fd9"; 
 
 static const char *upvol[]      = { "/usr/bin/wpctl",   "set-volume", "-l", "1.5", "@DEFAULT_AUDIO_SINK@",      "5%+",      NULL };
 static const char *downvol[]    = { "/usr/bin/wpctl",   "set-volume", "@DEFAULT_AUDIO_SINK@",      "5%-",      NULL };
@@ -99,15 +99,17 @@ static char *colors[][ColCount] = {
 
 static const Launcher launchers[] = {
 	/* icon to display      command        */
-	{ "󰈹",               CMD("firefox-bin") },
-	{ "",               CMD("alacritty") },
+	{ "󰈹",               CMD("firefox") },
+	{ "",               CMD("st") },
 	{ "",               CMD("krusader") },
 	{ "󰦨  | ",               CMD("kate") },
 };
 
 static const char *const autostart[] = {
-	"wpa_gui","-t", NULL,
-	"gentoo-pipewire-launcher", "restart",  NULL,
+	"connman-ui-gtk", NULL,
+	"pipewire", NULL,
+	"pipewire-pulse", NULL,
+	"wireplumber", NULL,
 	"slstatus", NULL, 
 	NULL /* terminate */
 };
@@ -120,7 +122,7 @@ static const char *const autostart[] = {
  * Examples:
  *
  *  1) static char *tagicons[][NUMTAGS*2] = {
- *         [DEFAULT_TAGS] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G", "H", "I" },
+ *         [DEFAULT_TAGS] = { "1", "2", "3", "4", "5" },
  *     }
  *
  *  2) static char *tagicons[][1] = {
@@ -232,7 +234,7 @@ static const char *dmenucmd[] = {
 	"-sf", selfgcolor,
 	NULL
 };
-static const char *termcmd[]  = { "alacritty", NULL };
+static const char *termcmd[]  = { "st", NULL };
 
 static const Key keys[] = {
 	/* modifier                     key            function                argument */
