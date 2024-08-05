@@ -51,7 +51,7 @@
 #define Button7                 7
 #define Button8                 8
 #define Button9                 9
-#define NUMTAGS                 9
+#define NUMTAGS                 5
 #define NUMVIEWHIST             NUMTAGS
 #define BARRULES                20
 #define BUTTONMASK              (ButtonPressMask|ButtonReleaseMask)
@@ -2124,27 +2124,33 @@ sigchld(int unused)
 void
 spawn(const Arg *arg)
 {
-	struct sigaction sa;
+    struct sigaction sa;
 
-	if (arg->v == dmenucmd)
-		dmenumon[0] = '0' + selmon->num;
+    if (arg->v == dmenucmd)
+        dmenumon[0] = '0' + selmon->num;
 
-	if (fork() == 0)
-	{
-		if (dpy)
-			close(ConnectionNumber(dpy));
+    // Check if there's a fullscreen window
+    Client *c = selmon->sel;
+    if (c && c->isfullscreen)
+        setfullscreen(c, 0); // Exit fullscreen
 
-		setsid();
+    if (fork() == 0)
+    {
+        if (dpy)
+            close(ConnectionNumber(dpy));
 
-		sigemptyset(&sa.sa_mask);
-		sa.sa_flags = 0;
-		sa.sa_handler = SIG_DFL;
-		sigaction(SIGCHLD, &sa, NULL);
+        setsid();
 
-		execvp(((char **)arg->v)[0], (char **)arg->v);
-		die("dwm: execvp '%s' failed:", ((char **)arg->v)[0]);
-	}
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = 0;
+        sa.sa_handler = SIG_DFL;
+        sigaction(SIGCHLD, &sa, NULL);
+
+        execvp(((char **)arg->v)[0], (char **)arg->v);
+        die("dwm: execvp '%s' failed:", ((char **)arg->v)[0]);
+    }
 }
+
 
 void
 tag(const Arg *arg)
