@@ -46,9 +46,9 @@ static char normbordercolor[]            = "#585151";
 static char normfloatcolor[]             = "#db8fd9";
 
 static char selfgcolor[]                 = "#eeeeee";
-static char selbgcolor[]                 = "#005577";
+static char selbgcolor[]                 = "#7da1c7";
 static char selbordercolor[]             = "#aa4538";
-static char selfloatcolor[]              = "#005577";
+static char selfloatcolor[]              = "#7da1c7";
 
 static char titlenormfgcolor[]           = "#211717";
 static char titlenormbgcolor[]           = "#c7c5c5";
@@ -70,7 +70,7 @@ static char tagsselbgcolor[]             = "#7da1c7";
 static char tagsselbordercolor[]         = "#7e8eaa";
 static char tagsselfloatcolor[]          = "#7da1c7";
 
-static char hidnormfgcolor[]             = "#005577";
+static char hidnormfgcolor[]             = "#7da1c7";
 static char hidselfgcolor[]              = "#227799";
 static char hidnormbgcolor[]             = "#222222";
 static char hidselbgcolor[]              = "#222222";
@@ -99,18 +99,16 @@ static char *colors[][ColCount] = {
 
 static const Launcher launchers[] = {
 	/* icon to display      command        */
-	{ "󰈹",               CMD("firefox") },
+	{ "",               CMD("google-chrome-stable") },
 	{ "",               CMD("st") },
 	{ "",               CMD("krusader") },
-	{ "󰦨  | ",               CMD("kate") },
+	{ "󰦨  | ",               CMD("zeditor") },
 };
 
 static const char *const autostart[] = {
 	"connman-ui-gtk", NULL,
-	"pipewire", NULL,
-	"pipewire-pulse", NULL,
-	"wireplumber", NULL,
-	"slstatus", NULL, 
+	"slstatus", NULL,
+       	"picom", NULL,	
 	NULL /* terminate */
 };
 
@@ -252,8 +250,8 @@ static const Key keys[] = {
 	{ MODKEY|Mod4Mask|ShiftMask,    XK_u,          incrgaps,               {.i = -1 } },
 	{ MODKEY|Mod4Mask,              XK_i,          incrigaps,              {.i = +1 } },
 	{ MODKEY|Mod4Mask|ShiftMask,    XK_i,          incrigaps,              {.i = -1 } },
-	{ MODKEY|Mod4Mask,              XK_o,          incrogaps,              {.i = +1 } },
-	{ MODKEY|Mod4Mask|ShiftMask,    XK_o,          incrogaps,              {.i = -1 } },
+	//{ MODKEY|Mod4Mask,              XK_o,          incrogaps,              {.i = +1 } },
+	//{ MODKEY|Mod4Mask|ShiftMask,    XK_o,          incrogaps,              {.i = -1 } },
 	{ MODKEY|Mod4Mask,              XK_6,          incrihgaps,             {.i = +1 } },
 	{ MODKEY|Mod4Mask|ShiftMask,    XK_6,          incrihgaps,             {.i = -1 } },
 	{ MODKEY|Mod4Mask,              XK_7,          incrivgaps,             {.i = +1 } },
@@ -274,12 +272,12 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_space,      setlayout,              {0} },
 	{ MODKEY|ShiftMask,             XK_space,      togglefloating,         {0} },
 	{ MODKEY,                       XK_f,          togglefullscreen,       {0} },
-	{ MODKEY,                       XK_0,          view,                   {.ui = ~0 } },
-	{ MODKEY|ShiftMask,             XK_0,          tag,                    {.ui = ~0 } },
-	{ MODKEY,                       XK_comma,      focusmon,               {.i = -1 } },
-	{ MODKEY,                       XK_period,     focusmon,               {.i = +1 } },
-	{ MODKEY|ShiftMask,             XK_comma,      tagmon,                 {.i = -1 } },
-	{ MODKEY|ShiftMask,             XK_period,     tagmon,                 {.i = +1 } },
+	//{ MODKEY,                       XK_0,          view,                   {.ui = ~0 } },
+	//{ MODKEY|ShiftMask,             XK_0,          tag,                    {.ui = ~0 } },
+	//{ MODKEY,                       XK_comma,      focusmon,               {.i = -1 } },
+	//{ MODKEY,                       XK_period,     focusmon,               {.i = +1 } },
+	//{ MODKEY|ShiftMask,             XK_comma,      tagmon,                 {.i = -1 } },
+	//{ MODKEY|ShiftMask,             XK_period,     tagmon,                 {.i = +1 } },
 	TAGKEYS(                        XK_1,                                  0)
 	TAGKEYS(                        XK_2,                                  1)
 	TAGKEYS(                        XK_3,                                  2)
