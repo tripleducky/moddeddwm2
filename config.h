@@ -32,7 +32,7 @@ static const unsigned int maxwtab          = 600;  /* tab menu width */
 static const unsigned int maxhtab          = 200;  /* tab menu height */
 
 /* Indicators: see patch/bar_indicators.h for options */
-static int tagindicatortype              = INDICATOR_TOP_LEFT_SQUARE;
+//static int tagindicatortype              = INDICATOR_TOP_LEFT_SQUARE;
 static int tiledindicatortype            = INDICATOR_NONE;
 static int floatindicatortype            = INDICATOR_TOP_LEFT_SQUARE;
 static const char *fonts[]               = { "monospace:size=12" };
@@ -78,7 +78,7 @@ static char hidselbgcolor[]              = "#222222";
 static char urgfgcolor[]                 = "#bbbbbb";
 static char urgbgcolor[]                 = "#222222";
 static char urgbordercolor[]             = "#ff0000";
-static char urgfloatcolor[]              = "#db8fd9"; 
+static char urgfloatcolor[]              = "#db8fd9";
 
 static const char *upvol[]      = { "/usr/bin/wpctl",   "set-volume", "-l", "1.5", "@DEFAULT_AUDIO_SINK@",      "5%+",      NULL };
 static const char *downvol[]    = { "/usr/bin/wpctl",   "set-volume", "@DEFAULT_AUDIO_SINK@",      "5%-",      NULL };
@@ -108,7 +108,7 @@ static const Launcher launchers[] = {
 static const char *const autostart[] = {
 	"connman-ui-gtk", NULL,
 	"slstatus", NULL,
-       	"picom", NULL,	
+       	"picom", NULL,
 	NULL /* terminate */
 };
 
@@ -143,7 +143,7 @@ static char *tagicons[][NUMTAGS] =
 {
 	[DEFAULT_TAGS]        = { "1", "2", "3", "4", "5" },
 	[ALTERNATIVE_TAGS]    = { "A", "B", "C", "D", "E" },
-	[ALT_TAGS_DECORATION] = { "<1>", "<2>", "<3>", "<4>", "<5>" },
+	[ALT_TAGS_DECORATION] = { "[1]", "[2]", "[3]", "[4]", "[5]" },
 };
 
 /* There are two options when it comes to per-client rules:
@@ -223,13 +223,17 @@ static const Layout layouts[] = {
 /* commands */
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[] = {
-	"dmenu_run",
+
+	"rofi",
+	"-show",
+	"drun",
+/*	"dmenu_run",
 	"-m", dmenumon,
 	"-fn", dmenufont,
 	"-nb", normbgcolor,
 	"-nf", normfgcolor,
 	"-sb", selbgcolor,
-	"-sf", selfgcolor,
+	"-sf", selfgcolor, */
 	NULL
 };
 static const char *termcmd[]  = { "st", NULL };
@@ -312,10 +316,9 @@ static const Button buttons[] = {
 +	 */
 	{ ClkClientWin,         MODKEY,              Button1,        moveorplace,    {.i = 1} },
 	{ ClkClientWin,         MODKEY,              Button2,        togglefloating, {0} },
-	{ ClkClientWin,         MODKEY,              Button3,        resizemouse,    {0} }, 
+	{ ClkClientWin,         MODKEY,              Button3,        resizemouse,    {0} },
 	{ ClkTagBar,            0,                   Button1,        view,           {0} },
 	{ ClkTagBar,            0,                   Button3,        toggleview,     {0} },
 	{ ClkTagBar,            MODKEY,              Button1,        tag,            {0} },
 	{ ClkTagBar,            MODKEY,              Button3,        toggletag,      {0} },
 };
-
