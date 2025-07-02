@@ -24,4 +24,5 @@
 #include "layout_fibonacci.h"
 #include "layout_monocle.h"
 #include "layout_tile.h"
-
+/* self made */
+#include "bar_volume.h"

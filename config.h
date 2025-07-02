@@ -102,7 +102,8 @@ static const Launcher launchers[] = {
 	{ "",               CMD("com.brave.Browser") },
 	{ "",               CMD("wezterm") },
 	{ "",               CMD("wezterm", "-e", "yazi") },
-	{ "󰦨  | ",               CMD("zeditor") },
+	{ "󰦨",               CMD("code") },
+	{ " | ",               CMD("true") },
 };
 
 static const char *const autostart[] = {
@@ -193,13 +194,14 @@ static const Rule rules[] = {
  *    name - does nothing, intended for visual clue and for logging / debugging
  */
 static const BarRule barrules[] = {
-	/* monitor   bar    alignment         widthfunc                 drawfunc                clickfunc                hoverfunc                name */
-	{ -1,        0,     BAR_ALIGN_LEFT,   width_launcher,           draw_launcher,          click_launcher,          NULL,                    "launcher" },
-	{ -1,        0,     BAR_ALIGN_LEFT,   width_tags,               draw_tags,              click_tags,              hover_tags,              "tags" },
-	{  0,        0,     BAR_ALIGN_RIGHT,  width_systray,            draw_systray,           click_systray,           NULL,                    "systray" },
-	{ -1,        0,     BAR_ALIGN_LEFT,   width_ltsymbol,           draw_ltsymbol,          click_ltsymbol,          NULL,                    "layout" },
-	{ statusmon, 0,     BAR_ALIGN_RIGHT,  width_status,             draw_status,            click_status,            NULL,                    "status" },
-	{ -1,        0,     BAR_ALIGN_NONE,   width_wintitle,           draw_wintitle,          click_wintitle,          NULL,                    "wintitle" },
+    /* monitor   bar    alignment         widthfunc                 drawfunc                clickfunc                hoverfunc   scrollfunc      name */
+    { -1,        0,     BAR_ALIGN_LEFT,   width_launcher,           draw_launcher,          click_launcher,          NULL,       NULL,           "launcher" },
+    { -1,        0,     BAR_ALIGN_LEFT,   width_tags,               draw_tags,              click_tags,              hover_tags, NULL,           "tags" },
+    {  0,        0,     BAR_ALIGN_RIGHT,  width_systray,            draw_systray,           click_systray,           NULL,       NULL,           "systray" },
+    { -1,        0,     BAR_ALIGN_LEFT,   width_ltsymbol,           draw_ltsymbol,          click_ltsymbol,          NULL,       NULL,           "layout" },
+    { statusmon, 0,     BAR_ALIGN_RIGHT,  width_status,             draw_status,            click_status,            NULL,       NULL,           "status" },
+    { statusmon, 0,     BAR_ALIGN_RIGHT,  width_volume,             draw_volume,            click_volume,            NULL,       scroll_volume,  "volume" },
+    { -1,        0,     BAR_ALIGN_NONE,   width_wintitle,           draw_wintitle,          click_wintitle,          NULL,       NULL,           "wintitle" },
 };
 
 /* layout(s) */

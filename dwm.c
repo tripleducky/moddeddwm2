@@ -168,15 +168,16 @@ typedef struct {
 } BarArg;
 
 typedef struct {
-	int monitor;
-	int bar;
-	int alignment; // see bar alignment enum
-	int (*widthfunc)(Bar *bar, BarArg *a);
-	int (*drawfunc)(Bar *bar, BarArg *a);
-	int (*clickfunc)(Bar *bar, Arg *arg, BarArg *a);
-	int (*hoverfunc)(Bar *bar, BarArg *a, XMotionEvent *ev);
-	char *name; // for debugging
-	int x, w; // position, width for internal use
+    int monitor;
+    int bar;
+    int alignment; // see bar alignment enum
+    int (*widthfunc)(Bar *bar, BarArg *a);
+    int (*drawfunc)(Bar *bar, BarArg *a);
+    int (*clickfunc)(Bar *bar, Arg *arg, BarArg *a);
+    int (*hoverfunc)(Bar *bar, BarArg *a, XMotionEvent *ev);
+    int (*scrollfunc)(Bar *bar, Arg *arg, BarArg *a); // <-- Add this line
+    char *name; // for debugging
+    int x, w; // position, width for internal use
 } BarRule;
 
 typedef struct {
@@ -403,6 +404,7 @@ static Window root, wmcheckwin;
 /* configuration, allows nested code to access above variables */
 #include "config.h"
 
+#include "patch/bar_volume.c"
 #include "patch/include.c"
 
 /* compile-time check if all tags fit into an unsigned int bit array. */
@@ -575,27 +577,34 @@ buttonpress(XEvent *e)
 	}
 
 	for (bar = selmon->bar; bar; bar = bar->next) {
-		if (ev->window == bar->win) {
-			for (r = 0; r < LENGTH(barrules); r++) {
-				br = &barrules[r];
-				if (br->bar != bar->idx || (br->monitor == 'A' && m != selmon) || br->clickfunc == NULL)
-					continue;
-				if (br->monitor != 'A' && br->monitor != -1 && br->monitor != bar->mon->num)
-					continue;
-				if (bar->x[r] <= ev->x && ev->x <= bar->x[r] + bar->w[r]) {
-					carg.x = ev->x - bar->x[r];
-					carg.y = ev->y - bar->borderpx;
-					carg.w = bar->w[r];
-					carg.h = bar->bh - 2 * bar->borderpx;
-					click = br->clickfunc(bar, &arg, &carg);
-					if (click < 0)
-						return;
-					break;
-				}
-			}
-			break;
-		}
-	}
+    if (ev->window == bar->win) {
+        for (r = 0; r < LENGTH(barrules); r++) {
+            br = &barrules[r];
+            if (br->bar != bar->idx || (br->monitor == 'A' && m != selmon) || br->clickfunc == NULL)
+                continue;
+            if (br->monitor != 'A' && br->monitor != -1 && br->monitor != bar->mon->num)
+                continue;
+            if (bar->x[r] <= ev->x && ev->x <= bar->x[r] + bar->w[r]) {
+                carg.x = ev->x - bar->x[r];
+                carg.y = ev->y - bar->borderpx;
+                carg.w = bar->w[r];
+                carg.h = bar->bh - 2 * bar->borderpx;
+                // --- PATCH START ---
+                if ((ev->button == Button4 || ev->button == Button5) && br->scrollfunc) {
+                    Arg arg = { .i = (ev->button == Button4) ? +1 : -1 };
+                    br->scrollfunc(bar, &arg, &carg);
+                    return;
+                }
+                // --- PATCH END ---
+                click = br->clickfunc(bar, &arg, &carg);
+                if (click < 0)
+                    return;
+                break;
+            }
+        }
+        break;
+    }
+}
 
 	if (click == ClkRootWin && (c = wintoclient(ev->window))) {
 		focus(c);
@@ -2517,6 +2526,7 @@ updatesizehints(Client *c)
 void
 updatestatus(void)
 {
+	update_volume();
 	Monitor *m;
 	if (!gettextprop(root, XA_WM_NAME, stext, sizeof(stext)))
 		strcpy(stext, "dwm-"VERSION);
