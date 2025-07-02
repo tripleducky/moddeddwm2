@@ -45,33 +45,33 @@ static char normbgcolor[]                = "#c7c5c5";
 static char normbordercolor[]            = "#585151";
 static char normfloatcolor[]             = "#db8fd9";
 
-static char selfgcolor[]                 = "#eeeeee";
-static char selbgcolor[]                 = "#7da1c7";
-static char selbordercolor[]             = "#aa4538";
-static char selfloatcolor[]              = "#7da1c7";
+static char selfgcolor[]                 = "#1e1e1e";
+static char selbgcolor[]                 = "#FFD000";
+static char selbordercolor[]             = "#FFB700";
+static char selfloatcolor[]              = "#FFD000";
 
 static char titlenormfgcolor[]           = "#211717";
 static char titlenormbgcolor[]           = "#c7c5c5";
 static char titlenormbordercolor[]       = "#9f9aa6";
 static char titlenormfloatcolor[]        = "#db8fd9";
 
-static char titleselfgcolor[]            = "#aa4538";
-static char titleselbgcolor[]            = "#7da1c7";
-static char titleselbordercolor[]        = "#7e8eaa";
-static char titleselfloatcolor[]         = "#7da1c7";
+static char titleselfgcolor[]            = "#391d0c";
+static char titleselbgcolor[]            = "#f8b430";
+static char titleselbordercolor[]        = "#391d0c";
+static char titleselfloatcolor[]         = "#f8b430";
 
 static char tagsnormfgcolor[]            = "#211717";
 static char tagsnormbgcolor[]            = "#c7c5c5";
 static char tagsnormbordercolor[]        = "#9f9aa6";
 static char tagsnormfloatcolor[]         = "#db8fd9";
 
-static char tagsselfgcolor[]             = "#aa4538";
-static char tagsselbgcolor[]             = "#7da1c7";
+static char tagsselfgcolor[]             = "#1e1e1e";
+static char tagsselbgcolor[]             = "#FFD000";
 static char tagsselbordercolor[]         = "#7e8eaa";
-static char tagsselfloatcolor[]          = "#7da1c7";
+static char tagsselfloatcolor[]          = "#FFD000";
 
-static char hidnormfgcolor[]             = "#7da1c7";
-static char hidselfgcolor[]              = "#227799";
+static char hidnormfgcolor[]             = "#FFD000";
+static char hidselfgcolor[]              = "#5d291c";
 static char hidnormbgcolor[]             = "#222222";
 static char hidselbgcolor[]              = "#222222";
 
@@ -99,16 +99,17 @@ static char *colors[][ColCount] = {
 
 static const Launcher launchers[] = {
 	/* icon to display      command        */
-	{ "",               CMD("google-chrome-stable") },
-	{ "",               CMD("st") },
-	{ "",               CMD("krusader") },
+	{ "",               CMD("com.brave.Browser") },
+	{ "",               CMD("wezterm") },
+	{ "",               CMD("wezterm", "-e", "yazi") },
 	{ "󰦨  | ",               CMD("zeditor") },
 };
 
 static const char *const autostart[] = {
-	"connman-ui-gtk", NULL,
+	"nm-applet", NULL,
 	"slstatus", NULL,
-       	"picom", NULL,
+	".config/awesome/autorun.sh", NULL,
+    /*   	"picom", NULL, */
 	NULL /* terminate */
 };
 
@@ -224,19 +225,19 @@ static const Layout layouts[] = {
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[] = {
 
-	"rofi",
+/* 	"rofi",
 	"-show",
-	"drun",
-/*	"dmenu_run",
+	"drun", */
+	"dmenu_run",
 	"-m", dmenumon,
 	"-fn", dmenufont,
 	"-nb", normbgcolor,
 	"-nf", normfgcolor,
 	"-sb", selbgcolor,
-	"-sf", selfgcolor, */
+	"-sf", selfgcolor,
 	NULL
 };
-static const char *termcmd[]  = { "st", NULL };
+static const char *termcmd[]  = { "wezterm", NULL };
 
 static const Key keys[] = {
 	/* modifier                     key            function                argument */
