@@ -346,6 +346,8 @@ static void updatesizehints(Client *c);
 static void updatestatus(void);
 static void updatetitle(Client *c);
 static void updatewmhints(Client *c);
+/* non-static helper to allow other translation units to request immediate refresh */
+void refresh_status(void);
 static void view(const Arg *arg);
 static Client *wintoclient(Window w);
 static Monitor *wintomon(Window w);
@@ -1352,6 +1354,19 @@ grabkeys(void)
 							 keys[i].mod | modifiers[j],
 							 root, True,
 							 GrabModeAsync, GrabModeAsync);
+
+		/* Also grab raw multimedia keycodes directly (volume keys) in case
+		 * they are not mapped to XF86 keysyms or some mapping daemon
+		 * interferes. These are the keycodes observed on the user's system.
+		 */
+		{
+			int raw_keys[] = { 121, 122, 123 };
+			size_t ri;
+			for (ri = 0; ri < LENGTH(raw_keys); ri++)
+				for (j = 0; j < LENGTH(modifiers); j++)
+					XGrabKey(dpy, raw_keys[ri], modifiers[j], root, True, GrabModeAsync, GrabModeAsync);
+		}
+
 		XFree(syms);
 	}
 }
@@ -1385,12 +1400,30 @@ keypress(XEvent *e)
 
 	ev = &e->xkey;
 	keysym = XGetKeyboardMapping(dpy, (KeyCode)ev->keycode, 1, &keysyms_return);
-	for (i = 0; i < LENGTH(keys); i++)
+	for (i = 0; i < LENGTH(keys); i++) {
 		if (*keysym == keys[i].keysym
 				&& CLEANMASK(keys[i].mod) == CLEANMASK(ev->state)
-				&& keys[i].func)
+				&& keys[i].func) {
+			/* execute the binding */
 			keys[i].func(&(keys[i].arg));
+			/* if this was a volume spawn (up/down/mute), refresh status immediately */
+			if (keys[i].func == spawn &&
+				(keys[i].arg.v == upvol || keys[i].arg.v == downvol || keys[i].arg.v == mutevol)) {
+				/* forward-declared function implemented below */
+				refresh_status();
+			}
+		}
+	}
 	XFree(keysym);
+}
+
+/* expose a small helper so other modules can request an immediate status update
+ * without manipulating root properties (which can interfere with status daemons).
+ */
+void
+refresh_status(void)
+{
+	updatestatus();
 }
 
 void
@@ -1809,22 +1842,10 @@ run(void)
 {
 	XEvent ev;
 	XSync(dpy, False);
-	/* main event loop */
 	while (running) {
-		struct pollfd pfd = {
-			.fd = ConnectionNumber(dpy),
-			.events = POLLIN,
-		};
-		int pending = XPending(dpy) > 0 || poll(&pfd, 1, -1) > 0;
-
-		if (!running)
-			break;
-		if (!pending)
-			continue;
-
 		XNextEvent(dpy, &ev);
 		if (handler[ev.type])
-			handler[ev.type](&ev); /* call handler */
+			handler[ev.type](&ev);
 	}
 }
 
@@ -2006,6 +2027,126 @@ setup(void)
 	sw = DisplayWidth(dpy, screen);
 	sh = DisplayHeight(dpy, screen);
 	root = RootWindow(dpy, screen);
+
+	/* If a mouse is plugged in at startup, disable the touchpad(s).
+	 * We run xinput --list --short and look for any slave pointer devices
+	 * that don't look like a touchpad. If found, we disable devices whose
+	 * name contains "touchpad" by calling xinput set-prop <id> "Device Enabled" 0.
+	 * This is best-effort; xinput must be available in PATH.
+	 */
+	{
+		FILE *fp = popen("xinput --list --short", "r");
+	if (fp && auto_disable_touchpad) {
+			char line[512];
+			int mouse_found = 0;
+			while (fgets(line, sizeof line, fp)) {
+				/* create lowercase copy for case-insensitive checks */
+				char lower[512];
+				size_t i;
+				for (i = 0; i < sizeof lower - 1 && line[i]; i++)
+					lower[i] = tolower((unsigned char)line[i]);
+				lower[i] = '\0';
+
+				if (strstr(lower, "slave") && strstr(lower, "pointer")
+					&& !strstr(lower, "touchpad") && !strstr(lower, "touch pad")
+					&& !strstr(lower, "synps"))
+					mouse_found = 1;
+			}
+			pclose(fp);
+
+			if (mouse_found) {
+				FILE *fp2 = popen("xinput --list --short | grep -i touchpad", "r");
+				if (fp2) {
+					while (fgets(line, sizeof line, fp2)) {
+						char *idp = strstr(line, "id=");
+						if (idp) {
+							int id;
+							if (sscanf(idp, "id=%d", &id) == 1) {
+								char cmd[128];
+								snprintf(cmd, sizeof cmd, "xinput set-prop %d \"Device Enabled\" 0", id);
+								system(cmd);
+							}
+						}
+					}
+					pclose(fp2);
+				}
+			}
+		}
+	}
+
+	/* If enabled in config, check for external monitors and disable internal
+	 * displays if any external is connected. We use xrandr --query and a
+	 * best-effort heuristic: treat outputs with names containing "eDP" or
+	 * "LVDS" as internal, others as external. If an external is found,
+	 * disable internal outputs and set external to its preferred mode.
+	 */
+#if 1
+	extern const int auto_disable_internal_monitor;
+	if (auto_disable_internal_monitor) {
+		FILE *xr = popen("xrandr --query", "r");
+		if (xr) {
+			char line[512];
+			char external_name[128] = {0};
+			char preferred_mode[64] = {0};
+			int saw_external = 0;
+			while (fgets(line, sizeof line, xr)) {
+				/* lines like: HDMI-1 connected 1920x1080+0+0 ... */
+				char name[128];
+				int connected = 0;
+				if (sscanf(line, "%127s connected", name) == 1) {
+					connected = 1;
+				}
+				if (connected) {
+					char lower[128];
+					for (size_t i = 0; i < sizeof lower - 1 && name[i]; i++)
+						lower[i] = tolower((unsigned char)name[i]);
+					lower[strlen(name)] = '\0';
+					if (!strstr(lower, "edp") && !strstr(lower, "eDP") && !strstr(lower, "lvds")) {
+						/* external */
+						strncpy(external_name, name, sizeof external_name - 1);
+						/* attempt to find the preferred mode on subsequent lines */
+						saw_external = 1;
+					}
+				}
+				if (saw_external && external_name[0]) {
+					/* preferred mode line contains a '*' after the resolution */
+					char *star = strchr(line, '*');
+					if (star) {
+						/* extract the resolution token from the start of line */
+						char mode[64];
+						if (sscanf(line, "%63s", mode) == 1) {
+							strncpy(preferred_mode, mode, sizeof preferred_mode - 1);
+							break;
+						}
+					}
+				}
+			}
+			pclose(xr);
+
+			if (external_name[0]) {
+				/* disable internal outputs */
+				FILE *xr2 = popen("xrandr --listmonitors >/dev/null 2>&1 && true", "r");
+				if (xr2) {
+					/* run xrandr commands */
+					char cmd[512];
+					/* turn off common internal names if present */
+					snprintf(cmd, sizeof cmd, "xrandr --output eDP-1 --off 2>/dev/null || true");
+					system(cmd);
+					snprintf(cmd, sizeof cmd, "xrandr --output LVDS-1 --off 2>/dev/null || true");
+					system(cmd);
+					/* enable and set external to preferred mode if found */
+					if (preferred_mode[0]) {
+						snprintf(cmd, sizeof cmd, "xrandr --output %s --mode %s --primary", external_name, preferred_mode);
+					} else {
+						snprintf(cmd, sizeof cmd, "xrandr --output %s --auto --primary", external_name);
+					}
+					system(cmd);
+					pclose(xr2);
+				}
+			}
+		}
+	}
+#endif
 	drw = drw_create(dpy, screen, root, sw, sh);
 	if (!drw_fontset_create(drw, fonts, LENGTH(fonts)))
 		die("no fonts could be loaded.");
@@ -2526,10 +2667,12 @@ updatesizehints(Client *c)
 void
 updatestatus(void)
 {
-	update_volume();
 	Monitor *m;
+	/* Read status text first (e.g. from slstatus) so we don't clobber it when
+	 * update_volume() runs. Then update volume and redraw bars. */
 	if (!gettextprop(root, XA_WM_NAME, stext, sizeof(stext)))
 		strcpy(stext, "dwm-"VERSION);
+	update_volume();
 	for (m = mons; m; m = m->next)
 		drawbar(m);
 }
@@ -2681,13 +2824,17 @@ main(int argc, char *argv[])
 	if (!(dpy = XOpenDisplay(NULL)))
 		die("dwm: cannot open display");
 	checkotherwm();
-	autostart_exec();
 	setup();
+	/* run autostart programs after setup so monitor/touchpad setup happens first */
+	autostart_exec();
 #ifdef __OpenBSD__
 	if (pledge("stdio rpath proc exec", NULL) == -1)
 		die("pledge");
 #endif /* __OpenBSD__ */
 	scan();
+	/* run user autostart scripts (blocking and non-blocking) after scan/setup
+	 * so programs like feh that set the background run after monitor configuration
+	 * has been applied. */
 	runautostart();
 	run();
 	cleanup();

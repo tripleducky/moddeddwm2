@@ -29,4 +29,4 @@ else
   xrandr --output eDP-1 --primary --mode 1920x1080 --pos 0x0 --output HDMI-1 --off --output DP-1 --off
 fi
 
-feh --bg-fill ~/Pictures/wallpaper/pexel-goop.jpg
+feh --bg-fill ~/Pictures/wallpaper/pexel1.jpg

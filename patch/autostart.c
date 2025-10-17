@@ -59,8 +59,18 @@ runautostart(void)
 		free(pathpfx);
 	}
 
-	if (access(path, X_OK) == 0)
-		system(path);
+	if (access(path, X_OK) == 0) {
+		pid_t pid = fork();
+		if (pid == 0) {
+			/* child: execute blocking autostart script (this process will wait) */
+			execl(path, path, (char *)NULL);
+			_exit(127);
+		} else if (pid > 0) {
+			/* parent: wait for the blocking autostart script to finish */
+			int status;
+			waitpid(pid, &status, 0);
+		}
+	}
 
 	/* now the non-blocking script */
 	if (sprintf(path, "%s/%s", pathpfx, autostartsh) <= 0) {
@@ -68,8 +78,15 @@ runautostart(void)
 		free(pathpfx);
 	}
 
-	if (access(path, X_OK) == 0)
-		system(strcat(path, " &"));
+	if (access(path, X_OK) == 0) {
+		pid_t pid = fork();
+		if (pid == 0) {
+			/* child: execute non-blocking autostart script and exit */
+			execl(path, path, (char *)NULL);
+			_exit(127);
+		}
+		/* parent continues without waiting */
+	}
 
 	free(pathpfx);
 	free(path);

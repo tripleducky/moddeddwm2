@@ -1,5 +1,7 @@
 /* See LICENSE file for copyright and license details. */
 
+#include <X11/XF86keysym.h>
+
 /* Helper macros for spawning commands */
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
 #define CMD(...)   { .v = (const char*[]){ __VA_ARGS__, NULL } }
@@ -16,6 +18,10 @@ static const char autostartblocksh[]     = "autostart_blocking.sh";
 static const char autostartsh[]          = "autostart.sh";
 static const char dwmdir[]               = "dwm";
 static const char localshare[]           = ".local/share";
+/* automatically disable touchpad at startup when an external mouse is present */
+static const int auto_disable_touchpad = 1;
+/* automatically disable internal laptop display when an external monitor is present */
+static const int auto_disable_internal_monitor = 1;
 static const int showbar                 = 1;   /* 0 means no bar */
 static const int topbar                  = 1;   /* 0 means bottom bar */
 /* Status is to be shown on: -1 (all monitors), 0 (a specific monitor by index), 'A' (active monitor) */
@@ -99,9 +105,9 @@ static char *colors[][ColCount] = {
 
 static const Launcher launchers[] = {
 	/* icon to display      command        */
-	{ "",               CMD("com.brave.Browser") },
-	{ "",               CMD("wezterm") },
-	{ "",               CMD("wezterm", "-e", "yazi") },
+	{ "",               CMD("helium-browser") },
+	{ "",               CMD("st") },
+	{ "",               CMD("dolphin") },
 	{ "󰦨",               CMD("code") },
 	{ " | ",               CMD("true") },
 };
@@ -109,7 +115,7 @@ static const Launcher launchers[] = {
 static const char *const autostart[] = {
 	"nm-applet", NULL,
 	"slstatus", NULL,
-	".config/awesome/autorun.sh", NULL,
+	".config/dwm/autorun.sh", NULL,
     /*   	"picom", NULL, */
 	NULL /* terminate */
 };
@@ -239,7 +245,7 @@ static const char *dmenucmd[] = {
 	"-sf", selfgcolor,
 	NULL
 };
-static const char *termcmd[]  = { "wezterm", NULL };
+static const char *termcmd[]  = { "st", NULL };
 
 static const Key keys[] = {
 	/* modifier                     key            function                argument */
@@ -297,6 +303,10 @@ static const Key keys[] = {
 		{ MODKEY,                       XK_minus, spawn, {.v = downvol } },
 	{ MODKEY,                       XK_0,  spawn, {.v = mutevol } },
 	{ MODKEY,                       XK_equal, spawn, {.v = upvol   } },
+		/* multimedia keys */
+		{ 0,                            XF86XK_AudioLowerVolume, spawn, {.v = downvol } },
+		{ 0,                            XF86XK_AudioMute,        spawn, {.v = mutevol } },
+		{ 0,                            XF86XK_AudioRaiseVolume, spawn, {.v = upvol   } },
 };
 
 /* button definitions */
