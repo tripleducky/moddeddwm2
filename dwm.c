@@ -2034,11 +2034,12 @@ setup(void)
 	 * name contains "touchpad" by calling xinput set-prop <id> "Device Enabled" 0.
 	 * This is best-effort; xinput must be available in PATH.
 	 */
-	{
+	if (auto_disable_touchpad) {
 		FILE *fp = popen("xinput --list --short", "r");
-	if (fp && auto_disable_touchpad) {
+		if (fp) {
 			char line[512];
 			int mouse_found = 0;
+			
 			while (fgets(line, sizeof line, fp)) {
 				/* create lowercase copy for case-insensitive checks */
 				char lower[512];
@@ -2047,10 +2048,20 @@ setup(void)
 					lower[i] = tolower((unsigned char)line[i]);
 				lower[i] = '\0';
 
+				/* Look for physical mice: slave pointer devices that are NOT touchpads
+				 * and NOT virtual devices (XTEST, Virtual core, etc.)
+				 */
 				if (strstr(lower, "slave") && strstr(lower, "pointer")
 					&& !strstr(lower, "touchpad") && !strstr(lower, "touch pad")
-					&& !strstr(lower, "synps"))
-					mouse_found = 1;
+					&& !strstr(lower, "synps") && !strstr(lower, "synaptics")
+					&& !strstr(lower, "trackpoint")
+					&& !strstr(lower, "xtest") && !strstr(lower, "virtual")) {
+					/* Additional check: look for common mouse keywords */
+					if (strstr(lower, "mouse") || strstr(lower, "logitech") || 
+					    strstr(lower, "razer") || strstr(lower, "usb")) {
+						mouse_found = 1;
+					}
+				}
 			}
 			pclose(fp);
 
@@ -2075,77 +2086,99 @@ setup(void)
 	}
 
 	/* If enabled in config, check for external monitors and disable internal
-	 * displays if any external is connected. We use xrandr --query and a
-	 * best-effort heuristic: treat outputs with names containing "eDP" or
-	 * "LVDS" as internal, others as external. If an external is found,
-	 * disable internal outputs and set external to its preferred mode.
+	 * displays only if a real external output is connected. We parse
+	 * `xrandr --query` and treat names containing eDP/LVDS/DSI as internal,
+	 * and those containing HDMI/DP/DisplayPort/DVI/VGA/TYPEC/USBC as external.
+	 * We ignore XWAYLAND and other virtual outputs. If an external is found,
+	 * then we disable detected internal outputs and set the external to auto/primary.
 	 */
 #if 1
 	extern const int auto_disable_internal_monitor;
 	if (auto_disable_internal_monitor) {
+		/* Allow runtime override via env, e.g., DWM_DISABLE_AUTO_XRANDR=1 */
+		const char *env_skip = getenv("DWM_DISABLE_AUTO_XRANDR");
+		if (env_skip && (*env_skip == '1' || *env_skip == 'y' || *env_skip == 'Y'))
+			goto xrandr_done;
+		
 		FILE *xr = popen("xrandr --query", "r");
 		if (xr) {
 			char line[512];
-			char external_name[128] = {0};
-			char preferred_mode[64] = {0};
-			int saw_external = 0;
+			char external_name[128];
+			char internals[8][128];
+			int internal_count = 0;
+			
+			/* Initialize to empty */
+			external_name[0] = '\0';
+			memset(internals, 0, sizeof(internals));
+			
 			while (fgets(line, sizeof line, xr)) {
-				/* lines like: HDMI-1 connected 1920x1080+0+0 ... */
 				char name[128];
-				int connected = 0;
-				if (sscanf(line, "%127s connected", name) == 1) {
-					connected = 1;
-				}
-				if (connected) {
-					char lower[128];
-					for (size_t i = 0; i < sizeof lower - 1 && name[i]; i++)
-						lower[i] = tolower((unsigned char)name[i]);
-					lower[strlen(name)] = '\0';
-					if (!strstr(lower, "edp") && !strstr(lower, "eDP") && !strstr(lower, "lvds")) {
-						/* external */
-						strncpy(external_name, name, sizeof external_name - 1);
-						/* attempt to find the preferred mode on subsequent lines */
-						saw_external = 1;
+				char resolution[64];
+				int has_resolution = 0;
+				
+				/* Try to parse "name connected [primary] resolution" */
+				if (sscanf(line, "%127s connected primary %63s", name, resolution) == 2 ||
+				    sscanf(line, "%127s connected %63s", name, resolution) == 2) {
+					/* Check if resolution looks like WIDTHxHEIGHT (has an 'x') */
+					if (strchr(resolution, 'x')) {
+						has_resolution = 1;
 					}
+				} else if (sscanf(line, "%127s connected", name) == 1) {
+					/* Just "connected" without resolution - could be ghost port or not yet configured */
+					resolution[0] = '\0';
+				} else {
+					continue; /* Not a connected device line */
 				}
-				if (saw_external && external_name[0]) {
-					/* preferred mode line contains a '*' after the resolution */
-					char *star = strchr(line, '*');
-					if (star) {
-						/* extract the resolution token from the start of line */
-						char mode[64];
-						if (sscanf(line, "%63s", mode) == 1) {
-							strncpy(preferred_mode, mode, sizeof preferred_mode - 1);
-							break;
-						}
-					}
+				
+				/* CRITICAL: Only process displays that have an active resolution!
+				 * This prevents ghost "DP-1 connected (normal...)" ports from being detected
+				 * as externals when no physical monitor is plugged in.
+				 */
+				if (!has_resolution)
+					continue;
+				
+				/* Classify display type:
+				 * Internal: eDP-*, LVDS-*, DSI-*
+				 * External: HDMI-*, DP-* (but NOT eDP-*), DisplayPort-*, DVI-*, VGA-*
+				 */
+				int is_internal = (name[0] == 'e' && strstr(name, "DP"))
+								 || strstr(name, "LVDS")
+								 || strstr(name, "DSI");
+				
+				int is_external = !is_internal && (
+									 strstr(name, "HDMI")
+								  || (strstr(name, "DP-") && name[0] != 'e')
+								  || strstr(name, "DisplayPort")
+								  || strstr(name, "DVI")
+								  || strstr(name, "VGA")
+								  );
+
+				if (is_internal && internal_count < 8) {
+					strncpy(internals[internal_count], name, sizeof internals[internal_count] - 1);
+					internals[internal_count][sizeof internals[internal_count] - 1] = '\0';
+					internal_count++;
+				} else if (is_external && !external_name[0]) {
+					strncpy(external_name, name, sizeof external_name - 1);
+					external_name[sizeof external_name - 1] = '\0';
 				}
 			}
 			pclose(xr);
 
+			/* Only disable internals if we found a real external monitor */
 			if (external_name[0]) {
-				/* disable internal outputs */
-				FILE *xr2 = popen("xrandr --listmonitors >/dev/null 2>&1 && true", "r");
-				if (xr2) {
-					/* run xrandr commands */
-					char cmd[512];
-					/* turn off common internal names if present */
-					snprintf(cmd, sizeof cmd, "xrandr --output eDP-1 --off 2>/dev/null || true");
+				char cmd[512];
+				/* First, enable external and set it primary (safer order) */
+				snprintf(cmd, sizeof cmd, "xrandr --output %s --auto --primary", external_name);
+				system(cmd);
+				/* Then turn off detected internal outputs */
+				for (int i = 0; i < internal_count; i++) {
+					snprintf(cmd, sizeof cmd, "xrandr --output %s --off 2>/dev/null || true", internals[i]);
 					system(cmd);
-					snprintf(cmd, sizeof cmd, "xrandr --output LVDS-1 --off 2>/dev/null || true");
-					system(cmd);
-					/* enable and set external to preferred mode if found */
-					if (preferred_mode[0]) {
-						snprintf(cmd, sizeof cmd, "xrandr --output %s --mode %s --primary", external_name, preferred_mode);
-					} else {
-						snprintf(cmd, sizeof cmd, "xrandr --output %s --auto --primary", external_name);
-					}
-					system(cmd);
-					pclose(xr2);
 				}
 			}
 		}
 	}
+xrandr_done: ;
 #endif
 	drw = drw_create(dpy, screen, root, sw, sh);
 	if (!drw_fontset_create(drw, fonts, LENGTH(fonts)))
